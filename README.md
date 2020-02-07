@@ -3,4 +3,4 @@
 
 ## Scripts
 
-- [Runoff simulation]("/runoff_endless_experiment.html"): Simulate a long-term surface runoff dataset based on empirical data.
+- [Runoff simulation](script/runoff_endless_experiment.html): Simulate a long-term surface runoff dataset based on empirical data.
