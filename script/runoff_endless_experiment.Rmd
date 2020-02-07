@@ -1,6 +1,8 @@
 ---
 title: "KwaThunzi runoff time-series simulation"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r libraries, include=FALSE}
