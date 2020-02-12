@@ -1,8 +1,26 @@
 ---
 title: "KwaThunzi runoff time-series simulation"
-output: rmarkdown::github_document
+author: "Christian Sommer"
+output:
+  html_document: default
+  md_document:
+    variant: markdown_github
 ---
+## Content
+This is a an R script to simulate a runoff time-series based on empirical data for the DYNGUL gully model by Alexey Sidorchuk (1998, 1999). In a first step, observed runoff data are transformed and a temporaly variable gaussian function is derived. In a second step, random values are created from this function in a reproducible manner, to create a simulated long-term time series, which resembles the natural conditions.
+The simulated time-series reflects the conditions of the observed data, *without effects like climate change or land use / land cover change, etc*. In the final step, data are 
 
+### Units
+
+| Name                            | Abbr | Unit                 |
+|---------------------------------|------|----------------------|
+| runoff                          | Q    | m³/s                 |
+| logarithmic runoff              | Qlog | log(m³/s)            |
+| area specific runoff            | q    | l/(m²s)              |
+| accumulated daily runoff height | qacc | mm/m² = l/m² per day |
+
+
+## Calculation
 ```{r libraries, include=FALSE}
 library(readr)
 library(lubridate)
@@ -10,23 +28,27 @@ library(ggplot2)
 library(hydrostats)
 ```
 
-## Data import and preparation
-Import the runoff dataset 1960-2018 of the Umkomazi gauging station (ID: U1H005) available at the [Department of Water Affairs](http://www.dwa.gov.za/Hydrology/). The runoff Q is in unit [m³/s].
+### Data import and preparation
+Import the runoff dataset 1960-2018 of the Umkomazi gauging station (ID: U1H005) available at the [South African Department of Water Affairs](http://www.dwa.gov.za/hydrology/Verified/HyDataSets.aspx?Station=U1H005). The runoff Q is in unit [m³/s].
 ```{r load data, message=FALSE, warning=FALSE}
 runoff <- read_table2("../data/U1H005_daily.txt", 
                       col_types = cols(DATE = col_integer()), 
                       skip = 10)
+```
+```{r echo=FALSE}
 head(runoff, 3)
 ```
 
-Clean the data and set column formats. The quality code indicating the validity of each observation is available [here]()
-Create seperate columns for 'year' and 'doy'(day-of-year) for each observation.
+Clean the data and set column formats. The quality code indicates the validity of each observation and is available [here](http://www.dwa.gov.za/hydrology/Verified/HyCodes.aspx).
+Derive seperate columns for 'year' and 'doy'(day-of-year) for each observation.
 ```{r data cleaning}                      
 runoff[is.na(runoff$QUAL),2] <- NA # remove Quality measures that shifted in the Q column
 runoff <- ts.format(runoff, format="%Y%m%d", cols=c(1,2)) # set date format
 runoff$year <- as.integer(substr(runoff$Date, 1,4)) # derive year
 runoff$doy <- as.numeric(strftime(runoff$Date, format = "%j"))  # derive day-of-year
 runoff <- na.omit(runoff) # delete empty fields
+```
+```{r echo=FALSE}
 head(runoff, 3)
 ```
 ```{r plot time series, echo=FALSE}
@@ -41,12 +63,14 @@ ggplot(runoff, aes(x=Date, y=Q)) +
         strip.text.x = element_text(size = 6))
 ```
 
-## Runoff transformation and aggregation
+### Runoff transformation and aggregation
 
 Transform discharge by base 10 logarithm.
 ```{r log tranformation}
 runoff$Qlog <- log10(runoff$Q)  # calculate Log base 10 of runoff
 runoff <- runoff[!(runoff$Qlog=='-Inf'),] # delete -Inf
+```
+```{r echo=FALSE}
 head(runoff,3)
 ```
 ```{r log tranformation plot, echo=FALSE}
@@ -58,8 +82,28 @@ ggplot(runoff, aes(x=doy,y=Qlog)) +
   
 ```
 
+If you plot all of a day-of-year's discharges, which were measured over the time series, you'll notice that they follow a normal distribution, when plotted on a logarithmic scale.
 
-Calculate daily mean and standard deviation for each day-of-year. 
+```{r echo=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
+#ggplot(runoff, aes(Q))+
+ggplot(subset(runoff, doy %in% c(1, 183)), aes(Q, group=doy, colour=factor(doy), fill=factor(doy)))+
+  geom_density(aes(Q, group=doy, colour=factor(doy), fill=factor(doy)),adjust=3, alpha=0.5) +
+  geom_rug()+
+  scale_x_log10(limits=c(1,1000))+
+  #scale_x_continuous(trans='log10')+
+  scale_fill_discrete(name="Day of year",
+                         breaks=c(1,183),
+                         labels=c("Jan 1st", "Jul 1st")) +
+  scale_colour_discrete(name="Day of year",
+                         breaks=c(1,183),
+                         labels=c("Jan 1st", "Jul 1st")) +
+  labs(title="Runoff density for selected days", x="Q [m³/s]", caption="n=59 years") +
+  theme_bw()
+```
+
+
+
+Therefore, we can describe daily runoff patterns, if we calculate daily mean and standard deviation for each day-of-year.
 ```{r aggregate runoff, warning=FALSE}
 #Create empty data frame
 runoff_aggregates <- data.frame()
@@ -74,23 +118,31 @@ names(runoff_aggregates) <- c('doy','mean','sd')
 
 ```
 
-## Runoff simulation
-Simulate expected runoff of each day of any timeseries. Create randomized values, based on the observed annual discharge distribution, which was derived from the time series 1960-2018. The random values are estimated from mean and standard deviation of each daily runoff.
+### Runoff simulation
+We simulate expected runoff of each day of any given timeseries, in this example for the range 1500–2018. We create randomized values, based on the observed annual discharge distribution, which was derived from the time series 1960-2018. The random values are derived through a gaussian function from the observed mean and standard deviation.
 ```{r simulation, message=FALSE, warning=FALSE}
 set.seed(2020)
-number_of_years <- 500 # years to be simulated
+# Manual input of desired time span
+start_year <- 1500
+end_year <- 2018
+number_of_years <- end_year-start_year
 runoff_pred <- data.frame()
 
+# Simulation
 for(i in runoff_aggregates$doy){
   x <- rnorm(number_of_years, mean=runoff_aggregates$mean[i], sd=runoff_aggregates$sd[i])
-  pred <- data.frame(cbind(seq(1,500,1), # year
-                         rep(i,500),   # doy
-                         x))           # predicted values
+  pred <- data.frame(cbind(seq(start_year,end_year,1), # year
+                         rep(i, number_of_years),      # doy
+                         x))                           # predicted values
   runoff_pred <- rbind(runoff_pred, pred)
 }
 names(runoff_pred) <- c('year','doy','Qlog')
+
+# Filter gap years
+runoff_pred <- runoff_pred[!(runoff_pred$doy==366 & leap_year(runoff_pred$year)==TRUE),]
+
 ```
-```{r simulation plot, echo=FALSE}
+```{r simulation plot, echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(runoff_pred, aes(x=doy,y=Qlog)) +
   geom_bin2d(binwidth=c(10,0.1)) +
   labs(x="Day of year", y="Log Q [m³/s]", title="Simulated runoff Mkomazi (U1H005)")+
@@ -101,25 +153,46 @@ Backtransformation of the logarithmic runoffs to regular Q [m³/s]
 runoff_pred$Q <- 10^runoff_pred$Qlog
 ```
 
-## Calculation of area specific runoff and export to file
+### Calculation of area specific runoff
 Calculate area specific runoff (q) after Baumgartner and Liebscher (1996) and Casper and Bormann (2016) using
 \begin{equation}q = \frac{Q}{A}\end{equation} with Q = runoff at the gauging station and A = catchment area
 ```{r area specific runoff}
 catchment_area <- 1744 * 1000000 # area in [m²]
 runoff_pred$q <- runoff_pred$Q/catchment_area
 ```
+We also calculate the accumulated runoff for each day in [mm/m²].
+```{r accumulated daily runoff, message=FALSE, warning=FALSE}
+runoff_pred$qacc <- runoff_pred$q * 86400 # multiply with secons per day
+```
+
 
 Order rows by year and day-of-year
 ```{r order}
 runoff_pred <- runoff_pred[order(runoff_pred$year, runoff_pred$doy),]
+```
+This is the resulting table with simulated runoff in the differen Formats Q [m³/s], q [l/(m²s)] and qacc [mm/]:
+```{r echo=FALSE}
 head(runoff_pred, 6)
 ```
-Export data to a structured file with the two columns 'year' and 'q', which is ready to use with the gully model
+
+### File Export
+Export simulated data to a structured file with the two columns 'year' and runoff ('q' or 'qacc'), which is ready to use with the gully model
 ```{r export}
+# Export in [l/(m²s)]
 out <- runoff_pred[,c("year", "q")] 
 out$q <- format(out$q, scientific = FALSE) # change to decimals
-write.table(out, "../output/S_150_lts.txt", sep="\t", row.names=F, col.names=F, quote=F)
+write.table(out, "../output/S_150_lts_lm2s.txt", sep="\t", row.names=F, col.names=F, quote=F)
+# Export in [mm]
+out <- runoff_pred[,c("year", "qacc")] 
+out$qacc <- format(out$qacc, scientific = FALSE) # change to decimals
+write.table(out, "../output/S_150_lts_mm.txt", sep="\t", row.names=F, col.names=F, quote=F)
 ```
+
 ## References
 BAUMGARTNER, A. & LIEBSCHER, H. J. 1996. Lehrbuch der Hydrologie, Band 1: Allgemeine Hydologie, Quantitative Hydrologie, Stuttgart, Germany, Schweizerbarth.
+
 CASPER, M. & BORMANN, H. 2016. Abfluss im Gewässersystem. In: FÖHRER, N., BORMANN, H., MIEGEL, K., CASPER, M., BRONSTERT, A., SCHUMANN, A. & WEILER, M. (eds.) Hydrologie. Bern, Switzerland: Haupt.
+
+SIDORCHUK, A. & SIDORCHUK, A. (1998). Model for estimating gully morphology Modelling Soil Erosion, Sediment Transport and Closely Related Hydrological Processes, Vienna.
+
+SIDORCHUK, A. (1999). "Dynamic and static models of gully erosion." CATENA 37(3): 401-414.
