@@ -44,10 +44,12 @@ runoff <- read_table2("../data/U1H005_daily.txt",
     ## 2 19600902  2.58     1
     ## 3 19600903  2.56     1
 
-Clean the data and set column formats. The quality code indicates the
+We clean the data and set column formats. The quality code indicates the
 validity of each observation and is available
-[here](http://www.dwa.gov.za/hydrology/Verified/HyCodes.aspx). Derive
-seperate columns for ‘year’ and ‘doy’(day-of-year) for each observation.
+[here](http://www.dwa.gov.za/hydrology/Verified/HyCodes.aspx). Then, we
+derive seperate columns for ‘year’ and ‘doy’(day-of-year) for each
+observation with the package
+[Lubridate](https://lubridate.tidyverse.org)
 
 ``` r
 runoff[is.na(runoff$QUAL),2] <- NA # remove Quality measures that shifted in the Q column
@@ -57,6 +59,8 @@ runoff$doy <- as.numeric(strftime(runoff$Date, format = "%j"))  # derive day-of-
 runoff <- na.omit(runoff) # delete empty fields
 ```
 
+As a result, we get this table…
+
     ## # A tibble: 3 x 5
     ##   Date                    Q  QUAL  year   doy
     ##   <dttm>              <dbl> <dbl> <int> <dbl>
@@ -64,11 +68,12 @@ runoff <- na.omit(runoff) # delete empty fields
     ## 2 1960-09-02 00:00:00  2.58     1  1960   246
     ## 3 1960-09-03 00:00:00  2.56     1  1960   247
 
+… and this continuous dataset of the runoff at the gauging station.
 ![](runoff_endless_experiment_files/figure-markdown_github/plot%20time%20series-1.png)
 
 ### Runoff transformation and aggregation
 
-Transform discharge by base 10 logarithm.
+We transform the discharge by a base 10 logarithm.
 
 ``` r
 runoff$Qlog <- log10(runoff$Q)  # calculate Log base 10 of runoff
@@ -84,14 +89,15 @@ runoff <- runoff[!(runoff$Qlog=='-Inf'),] # delete -Inf
 
 ![](runoff_endless_experiment_files/figure-markdown_github/log%20tranformation%20plot-1.png)
 
-If you plot all of a day-of-year’s discharges, which were measured over
-the time series, you’ll notice that they follow a normal distribution,
-when plotted on a logarithmic scale.
+If we plot all of a day-of-year’s discharges, which were measured over
+the time series, we notice that they follow a normal distribution, when
+plotted on a logarithmic scale.
 
 ![](runoff_endless_experiment_files/figure-markdown_github/unnamed-chunk-4-1.png)
 
-Therefore, we can describe daily runoff patterns, if we calculate daily
-mean and standard deviation for each day-of-year.
+Therefore, we can aptly describe daily runoff patterns through the
+calculation of mean and standard deviation for each individual
+day-of-year.
 
 ``` r
 #Create empty data frame
@@ -108,11 +114,11 @@ names(runoff_aggregates) <- c('doy','mean','sd')
 
 ### Runoff simulation
 
-We simulate expected runoff of each day of any given timeseries, in this
-example for the range 1500–2018. We create randomized values, based on
-the observed annual discharge distribution, which was derived from the
-time series 1960-2018. The random values are derived through a gaussian
-function from the observed mean and standard deviation.
+Now, We simulate expected runoff for each day of any given timeseries,
+in this example for the range 1500–2018. We create randomized values,
+based on the observed annual discharge distribution, which was derived
+from the time series 1960-2018. The random values are derived through a
+gaussian function from the observed mean and standard deviation.
 
 ``` r
 set.seed(2020)
@@ -136,7 +142,10 @@ names(runoff_pred) <- c('year','doy','Qlog')
 runoff_pred <- runoff_pred[!(runoff_pred$doy==366 & leap_year(runoff_pred$year)==TRUE),]
 ```
 
+Here is the resulting distribution of daily discharges. The similarity
+with the previous illustration of observed data is obvious.
 ![](runoff_endless_experiment_files/figure-markdown_github/simulation%20plot-1.png)
+
 Backtransformation of the logarithmic runoffs to regular Q \[m³/s\]
 
 ``` r
@@ -145,9 +154,11 @@ runoff_pred$Q <- 10^runoff_pred$Qlog
 
 ### Calculation of area specific runoff
 
-Calculate area specific runoff (q) after Baumgartner and Liebscher
-(1996) and Casper and Bormann (2016) using with Q = runoff at the
-gauging station and A = catchment area
+Until here, we were dealing with runoff values of the gauging station.
+Now we relate the results to the entire subcatchment area. Therefore, we
+calculate the **area specific runoff (q)** after Baumgartner & Liebscher
+(1996) and Casper & Bormann (2016) using with Q = runoff at the gauging
+station and A = catchment area
 
 ``` r
 catchment_area <- 1744 * 1000000 # area in [m²]
@@ -179,8 +190,9 @@ formats Q \[m³/s\], q \[l/(m²s)\] and qacc \[mm/\]:
 
 ### File Export
 
-Export simulated data to a structured file with the two columns ‘year’
-and runoff (‘q’ or ‘qacc’), which is ready to use with the gully model
+Finally, we export the simulated data to a structured file with the two
+columns ‘year’ and runoff (‘q’ or ‘qacc’), which is ready to use with
+the gully model.
 
 ``` r
 # Export in [l/(m²s)]
