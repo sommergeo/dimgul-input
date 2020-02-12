@@ -177,7 +177,7 @@ Order rows by year and day-of-year
 runoff_pred <- runoff_pred[order(runoff_pred$year, runoff_pred$doy),]
 ```
 
-This is the resulting table with simulated runoff in the differen
+This is the resulting table with simulated runoff in the different
 formats Q \[m³/s\], q \[l/(m²s)\] and qacc \[mm/\]:
 
     ##      year doy     Qlog        Q            q         qacc

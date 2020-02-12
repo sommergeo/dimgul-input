@@ -2,12 +2,12 @@
 title: "KwaThunzi runoff time-series simulation"
 author: "Christian Sommer"
 output:
+  html_document: default
   md_document:
     variant: markdown_github
-  html_document: default
 ---
 ## Content
-This is a an R script to simulate a runoff time-series based on empirical data for the DYNGUL gully model by Alexey Sidorchuk (1998, 1999). In a first step, observed runoff data are transformed and a temporaly variable gaussian function is derived. In a second step, random values are created from this function in a reproducible manner, to create a simulated long-term time series, which resembles the natural conditions.
+This is a an R script to simulate a runoff time-series based on empirical data for the DYNGUL gully model by Alexey Sidorchuk (1998, 1999). In a first step, observed runoff data are transformed and a temporaly variable gaussian function is derived. In a second step, random values are derived from this function in a reproducible manner, in order to simulate a long-term time-series, which resembles the natural conditions, whille providing data, where no observations are available.
 The simulated time-series reflects the conditions of the observed data, *without effects like climate change or land use / land cover change, etc*. In the final step, data are exportet in a structered text file, which is ready-to-use with the DYNGUL implementation.
 
 ### Units
@@ -18,6 +18,15 @@ The simulated time-series reflects the conditions of the observed data, *without
 | logarithmic runoff              | Qlog | log(m³/s)            |
 | area specific runoff            | q    | l/(m²s)              |
 | accumulated daily runoff height | qacc | mm/m² = l/m² per day |
+
+### Study Area
+Gully KwaThunzi is situated in the Upper Umkomazi catchment and part of the subcatchment draining into gauging station (U1H005)[http://www.dwa.gov.za/hydrology/Verified/HyImage.aspx?Station=U1H005].
+
+<img src="../docs/img/umkomazi_catchment.png" alt="Umkomazi catchment with Gully KwaThunzi" height="450">
+
+The climate data was aggregated from the [CRU-TS](http://www.cru.uea.ac.uk/data) dataset.
+
+<img src="../docs/img/kt_walter-lieth.png" alt="Climate Diagram of Gully KwaThuni (Umkomazi catchment) from CRU-TS" height="350">
 
 
 ## Calculation
@@ -82,7 +91,8 @@ head(runoff,3)
 ggplot(runoff, aes(x=doy,y=Qlog)) +
   geom_bin2d(binwidth=c(10,0.1)) +
   labs(x="Day of year", y="Log Q [m³/s]", title="Observed runoff Mkomazi (U1H005)") +
-  ylim(-2,3)
+  ylim(-2,3) +
+  theme_bw()
   
 ```
 
@@ -146,12 +156,14 @@ names(runoff_pred) <- c('year','doy','Qlog')
 runoff_pred <- runoff_pred[!(runoff_pred$doy==366 & leap_year(runoff_pred$year)==TRUE),]
 
 ```
+
 Here is the resulting distribution of daily discharges. The similarity with the previous illustration of observed data is obvious.
 ```{r simulation plot, echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(runoff_pred, aes(x=doy,y=Qlog)) +
   geom_bin2d(binwidth=c(10,0.1)) +
   labs(x="Day of year", y="Log Q [m³/s]", title="Simulated runoff Mkomazi (U1H005)")+
-  ylim(-2,3)
+  ylim(-2,3)+
+  theme_bw()
 ```
 
 Backtransformation of the logarithmic runoffs to regular Q [m³/s]
@@ -161,7 +173,8 @@ runoff_pred$Q <- 10^runoff_pred$Qlog
 
 ### Calculation of area specific runoff
 Until here, we were dealing with runoff values of the gauging station. Now we relate the results to the entire subcatchment area. Therefore, we calculate the **area specific runoff (q)** after Baumgartner & Liebscher (1996) and Casper & Bormann (2016) using
-\begin{equation}q = \frac{Q}{A}\end{equation} with Q = runoff at the gauging station and A = catchment area
+\begin{equation}q = \frac{Q}{A}\end{equation} 
+with Q = runoff at the gauging station and A = catchment area
 ```{r area specific runoff}
 catchment_area <- 1744 * 1000000 # area in [m²]
 runoff_pred$q <- runoff_pred$Q/catchment_area
