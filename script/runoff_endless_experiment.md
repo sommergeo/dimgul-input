@@ -1,5 +1,5 @@
-# KwaThunzi runoff time-series simulation
-## Content
+Content
+-------
 
 This is a an R script to simulate a runoff time-series based on
 empirical data for the DYNGUL gully model by Alexey Sidorchuk (1998,
@@ -9,7 +9,8 @@ random values are created from this function in a reproducible manner,
 to create a simulated long-term time series, which resembles the natural
 conditions. The simulated time-series reflects the conditions of the
 observed data, *without effects like climate change or land use / land
-cover change, etc*. In the final step, data are
+cover change, etc*. In the final step, data are exportet in a structered
+text file, which is ready-to-use with the DYNGUL implementation.
 
 ### Units
 
@@ -20,7 +21,8 @@ cover change, etc*. In the final step, data are
 | area specific runoff            | q    | l/(m²s)              |
 | accumulated daily runoff height | qacc | mm/m² = l/m² per day |
 
-## Calculation
+Calculation
+-----------
 
 ### Data import and preparation
 
@@ -165,7 +167,7 @@ runoff_pred <- runoff_pred[order(runoff_pred$year, runoff_pred$doy),]
 ```
 
 This is the resulting table with simulated runoff in the differen
-Formats Q \[m³/s\], q \[l/(m²s)\] and qacc \[mm/\]:
+formats Q \[m³/s\], q \[l/(m²s)\] and qacc \[mm/\]:
 
     ##      year doy     Qlog        Q            q         qacc
     ## 1    1500   1 1.449944 28.18022 1.615838e-08 0.0013960842

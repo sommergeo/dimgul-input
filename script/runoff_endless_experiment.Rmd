@@ -8,7 +8,7 @@ output:
 ---
 ## Content
 This is a an R script to simulate a runoff time-series based on empirical data for the DYNGUL gully model by Alexey Sidorchuk (1998, 1999). In a first step, observed runoff data are transformed and a temporaly variable gaussian function is derived. In a second step, random values are created from this function in a reproducible manner, to create a simulated long-term time series, which resembles the natural conditions.
-The simulated time-series reflects the conditions of the observed data, *without effects like climate change or land use / land cover change, etc*. In the final step, data are 
+The simulated time-series reflects the conditions of the observed data, *without effects like climate change or land use / land cover change, etc*. In the final step, data are exportet in a structered text file, which is ready-to-use with the DYNGUL implementation.
 
 ### Units
 

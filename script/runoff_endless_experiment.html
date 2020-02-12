@@ -370,7 +370,7 @@ summary {
 
 <div id="content" class="section level2">
 <h2>Content</h2>
-<p>This is a an R script to simulate a runoff time-series based on empirical data for the DYNGUL gully model by Alexey Sidorchuk (1998, 1999). In a first step, observed runoff data are transformed and a temporaly variable gaussian function is derived. In a second step, random values are created from this function in a reproducible manner, to create a simulated long-term time series, which resembles the natural conditions. The simulated time-series reflects the conditions of the observed data, <em>without effects like climate change or land use / land cover change, etc</em>. In the final step, data are</p>
+<p>This is a an R script to simulate a runoff time-series based on empirical data for the DYNGUL gully model by Alexey Sidorchuk (1998, 1999). In a first step, observed runoff data are transformed and a temporaly variable gaussian function is derived. In a second step, random values are created from this function in a reproducible manner, to create a simulated long-term time series, which resembles the natural conditions. The simulated time-series reflects the conditions of the observed data, <em>without effects like climate change or land use / land cover change, etc</em>. In the final step, data are exportet in a structered text file, which is ready-to-use with the DYNGUL implementation.</p>
 <div id="units" class="section level3">
 <h3>Units</h3>
 <table>
@@ -494,7 +494,7 @@ runoff_pred$q &lt;- runoff_pred$Q/catchment_area</code></pre>
 <pre class="r"><code>runoff_pred$qacc &lt;- runoff_pred$q * 86400 # multiply with secons per day</code></pre>
 <p>Order rows by year and day-of-year</p>
 <pre class="r"><code>runoff_pred &lt;- runoff_pred[order(runoff_pred$year, runoff_pred$doy),]</code></pre>
-<p>This is the resulting table with simulated runoff in the differen Formats Q [m³/s], q [l/(m²s)] and qacc [mm/]:</p>
+<p>This is the resulting table with simulated runoff in the differen formats Q [m³/s], q [l/(m²s)] and qacc [mm/]:</p>
 <pre><code>##      year doy     Qlog        Q            q         qacc
 ## 1    1500   1 1.449944 28.18022 1.615838e-08 0.0013960842
 ## 520  1500   2 1.339125 21.83357 1.251925e-08 0.0010816632
