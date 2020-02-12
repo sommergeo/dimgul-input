@@ -3,23 +3,39 @@ Content
 
 This is a an R script to simulate a runoff time-series based on
 empirical data for the DYNGUL gully model by Alexey Sidorchuk (1998,
-1999). In a first step, observed runoff data are transformed and a
+1999). In a first step, observed flow data are transformed and a
 temporaly variable gaussian function is derived. In a second step,
-random values are created from this function in a reproducible manner,
-to create a simulated long-term time series, which resembles the natural
-conditions. The simulated time-series reflects the conditions of the
+random values are derived from this function in a reproducible manner,
+in order to simulate a long-term time-series, which resembles the
+natural conditions, whille providing data, where no observations are
+available. The simulated time-series reflects the conditions of the
 observed data, *without effects like climate change or land use / land
-cover change, etc*. In the final step, data are exportet in a structered
-text file, which is ready-to-use with the DYNGUL implementation.
+cover change, etc*. In the third step, we calculate hydrological values
+like area specific runoff q and runoff height R. In the last step, data
+are exportet in a structered text file, which is ready-to-use with the
+DYNGUL implementation.
 
 ### Units
 
-| Name                            | Abbr | Unit                 |
-|---------------------------------|------|----------------------|
-| runoff                          | Q    | m³/s                 |
-| logarithmic runoff              | Qlog | log(m³/s)            |
-| area specific runoff            | q    | l/(m²s)              |
-| accumulated daily runoff height | qacc | mm/m² = l/m² per day |
+| Name                                 | Abbr | Unit      |
+|--------------------------------------|------|-----------|
+| Discharge                            | Q    | m³/s      |
+| logarithmic Discharge                | Qlog | log(m³/s) |
+| area specific runoff “Abflussspende” | q    | l/(m²s)   |
+| daily runoff height “Abflusshöhe”    | R    | mm/day    |
+
+### Study Area
+
+Gully KwaThunzi is situated in the Upper Umkomazi catchment and part of
+the subcatchment draining into gauging station
+[U1H005](http://www.dwa.gov.za/hydrology/Verified/HyImage.aspx?Station=U1H005).
+
+<img src="../docs/img/umkomazi_catchment.png" alt="Umkomazi catchment with Gully KwaThunzi" height="450">
+
+The climate data were aggregated from the
+[CRU-TS](http://www.cru.uea.ac.uk/data) v4.03 dataset.
+
+<img src="../docs/img/kt_walter-lieth.png" alt="Climate Diagram of Gully KwaThuni (Umkomazi catchment) from CRU-TS" height="350">
 
 Calculation
 -----------
@@ -157,18 +173,22 @@ runoff_pred$Q <- 10^runoff_pred$Qlog
 Until here, we were dealing with runoff values of the gauging station.
 Now we relate the results to the entire subcatchment area. Therefore, we
 calculate the **area specific runoff (q)** after Baumgartner & Liebscher
-(1996) and Casper & Bormann (2016) using with Q = runoff at the gauging
-station and A = catchment area
+(1996: eq. 14.1, p. 475) and Casper & Bormann (2016: eq. 8.4, p. 128)
+using with Q = runoff at the gauging station \[m³/s\] and A =
+subcatchment area of the gauging station \[km²\]. The area specific
+runoff q is in \[l/(km²s)\].
 
 ``` r
-catchment_area <- 1744 * 1000000 # area in [m²]
-runoff_pred$q <- runoff_pred$Q/catchment_area
+catchment_area <- 1744 # area in [km²]
+runoff_pred$q <- runoff_pred$Q*1000/catchment_area # Q [m³/s] to [l/s]
 ```
 
-We also calculate the accumulated runoff for each day in \[mm/m²\].
+We also calculate the accumulated **runoff h** for each day in \[mm/d\]
+after Baumgartner & Liebscher (1996: eq. 14.2, p. 475) with t = time in
+\[s\]
 
 ``` r
-runoff_pred$qacc <- runoff_pred$q * 86400 # multiply with secons per day
+runoff_pred$R <- runoff_pred$q * 86400 / 10^6 # per day
 ```
 
 Order rows by year and day-of-year
@@ -178,32 +198,38 @@ runoff_pred <- runoff_pred[order(runoff_pred$year, runoff_pred$doy),]
 ```
 
 This is the resulting table with simulated runoff in the differen
-formats Q \[m³/s\], q \[l/(m²s)\] and qacc \[mm/\]:
+formats Q \[m³/s\], q \[l/(m²s)\] and R \[mm/d\]:
 
-    ##      year doy     Qlog        Q            q         qacc
-    ## 1    1500   1 1.449944 28.18022 1.615838e-08 0.0013960842
-    ## 520  1500   2 1.339125 21.83357 1.251925e-08 0.0010816632
-    ## 1039 1500   3 1.854591 71.54699 4.102465e-08 0.0035445300
-    ## 1558 1500   4 1.665231 46.26271 2.652679e-08 0.0022919143
-    ## 2077 1500   5 1.247821 17.69381 1.014553e-08 0.0008765739
-    ## 2596 1500   6 1.669091 46.67577 2.676363e-08 0.0023123776
+    ##      year doy     Qlog        Q        q         R
+    ## 1    1500   1 1.449944 28.18022 16.15838 1.3960842
+    ## 520  1500   2 1.339125 21.83357 12.51925 1.0816632
+    ## 1039 1500   3 1.854591 71.54699 41.02465 3.5445300
+    ## 1558 1500   4 1.665231 46.26271 26.52679 2.2919143
+    ## 2077 1500   5 1.247821 17.69381 10.14553 0.8765739
+    ## 2596 1500   6 1.669091 46.67577 26.76363 2.3123776
 
 ### File Export
 
 Finally, we export the simulated data to a structured file with the two
-columns ‘year’ and runoff (‘q’ or ‘qacc’), which is ready to use with
-the gully model.
+columns ‘year’ and runoff (‘q’ or ‘h’), which is ready to use with the
+gully model.
 
 ``` r
-# Export in [l/(m²s)]
+# Export q in [l/(km²s)]
 out <- runoff_pred[,c("year", "q")] 
 out$q <- format(out$q, scientific = FALSE) # change to decimals
-write.table(out, "../output/S_150_lts_lm2s.txt", sep="\t", row.names=F, col.names=F, quote=F)
-# Export in [mm]
-out <- runoff_pred[,c("year", "qacc")] 
-out$qacc <- format(out$qacc, scientific = FALSE) # change to decimals
-write.table(out, "../output/S_150_lts_mm.txt", sep="\t", row.names=F, col.names=F, quote=F)
+write.table(out, "../output/S_150_lts_q.txt", sep="\t", row.names=F, col.names=F, quote=F)
+
+# Export h in [mm/d]
+out <- runoff_pred[,c("year", "R")] 
+out$R <- format(out$R, scientific = FALSE) # change to decimals
+write.table(out, "../output/S_150_lts_R.txt", sep="\t", row.names=F, col.names=F, quote=F)
 ```
+
+Useful Links
+------------
+
+-   <https://www.bauformeln.de/einheiten-rechner/niederschlagsintensitaet-und-abflussspende/>
 
 References
 ----------
