@@ -22,11 +22,11 @@ The simulated time-series reflects the conditions of the observed data, *without
 ### Study Area
 Gully KwaThunzi is situated in the Upper Umkomazi catchment and part of the subcatchment draining into gauging station [U1H005](http://www.dwa.gov.za/hydrology/Verified/HyImage.aspx?Station=U1H005).
 
-<img src="../docs/img/umkomazi_catchment.png" alt="Umkomazi catchment with Gully KwaThunzi" height="450">
+<img src="../docs/img/umkomazi_catchment.png" alt="Umkomazi catchment with Gully KwaThunzi" height="50%" width="50%">
 
 The climate data were aggregated from the [CRU-TS](http://www.cru.uea.ac.uk/data) v4.03 dataset.
 
-<img src="../docs/img/kt_walter-lieth.png" alt="Climate Diagram of Gully KwaThuni (Umkomazi catchment) from CRU-TS" height="350">
+<img src="../docs/img/kt_walter-lieth.png" alt="Climate Diagram of Gully KwaThuni (Umkomazi catchment) from CRU-TS" height="50%" width="50%">
 
 
 ## Calculation
@@ -115,7 +115,19 @@ ggplot(subset(runoff, doy %in% c(1, 183)), aes(Q, group=doy, colour=factor(doy),
   theme_bw()
 ```
 
+```{r Shapiro-Wilk test, eval=FALSE, warning=FALSE, include=FALSE}
+#Furthermore, we conduct a Shapiro-Wilk test toconfirm our observation statistically. We excpect (H0), that the logarithmic discharge is normally distributed.
 
+
+for(i in unique(runoff$doy)){
+  
+  if(shapiro.test(runoff$Qlog[runoff$doy==i])$p.value <= 0.01){
+    print(shapiro.test(runoff$Qlog[runoff$doy==i])$p.value)
+  }
+  
+}
+
+```
 
 Therefore, we can aptly describe daily runoff patterns through the calculation of mean and standard deviation for each individual day-of-year.
 ```{r aggregate runoff, warning=FALSE}
@@ -131,6 +143,7 @@ runoff_aggregates$sd <- aggregate(runoff, list(runoff$doy), FUN=sd)[,c('Qlog')]
 names(runoff_aggregates) <- c('doy','mean','sd')
 
 ```
+
 
 ### Runoff simulation
 Now, We simulate expected runoff for each day of any given timeseries, in this example for the range 1500–2018. We create randomized values, based on the observed annual discharge distribution, which was derived from the time series 1960-2018. The random values are derived through a gaussian function from the observed mean and standard deviation.
@@ -171,7 +184,7 @@ Backtransformation of the logarithmic runoffs to regular Q [m³/s]
 runoff_pred$Q <- 10^runoff_pred$Qlog
 ```
 
-### Calculation of area specific runoff
+### Calculation of area specific runoff and runoff height
 Until here, we were dealing with runoff values of the gauging station. Now we relate the results to the entire subcatchment area. Therefore, we calculate the **area specific runoff (q)** after Baumgartner & Liebscher (1996: eq. 14.1, p. 475) and Casper & Bormann (2016: eq. 8.4, p. 128) using
 \begin{equation}q = \frac{Q}{A}\end{equation} 
 with Q = runoff at the gauging station [m³/s] and A = subcatchment area of the gauging station [km²]. The area specific runoff q is in [l/(km²s)].
@@ -198,10 +211,11 @@ head(runoff_pred, 6)
 ```
 
 ### File Export
-Finally, we export the simulated data to a structured file with the two columns 'year' and runoff ('q' or 'h'), which is ready to use with the gully model.
+Finally, we export the simulated data to a structured file with the two columns 'year' and runoff ('q' or 'h'), which is ready to use with the gully model. Note that we convert q from unit [l/(km²s)] to [l/(m²s)] for compability reasons.
 ```{r export}
 # Export q in [l/(km²s)]
-out <- runoff_pred[,c("year", "q")] 
+out <- runoff_pred[,c("year", "q")]
+out$q <- out$q/1000000 # [l/(km²s)] to [l/(m²s)]
 out$q <- format(out$q, scientific = FALSE) # change to decimals
 write.table(out, "../output/S_150_lts_q.txt", sep="\t", row.names=F, col.names=F, quote=F)
 

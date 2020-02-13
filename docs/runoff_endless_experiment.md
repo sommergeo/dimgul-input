@@ -30,12 +30,12 @@ Gully KwaThunzi is situated in the Upper Umkomazi catchment and part of
 the subcatchment draining into gauging station
 [U1H005](http://www.dwa.gov.za/hydrology/Verified/HyImage.aspx?Station=U1H005).
 
-<img src="../docs/img/umkomazi_catchment.png" alt="Umkomazi catchment with Gully KwaThunzi" height="450">
+<img src="../docs/img/umkomazi_catchment.png" alt="Umkomazi catchment with Gully KwaThunzi" height="50%" width="50%">
 
 The climate data were aggregated from the
 [CRU-TS](http://www.cru.uea.ac.uk/data) v4.03 dataset.
 
-<img src="../docs/img/kt_walter-lieth.png" alt="Climate Diagram of Gully KwaThuni (Umkomazi catchment) from CRU-TS" height="350">
+<img src="../docs/img/kt_walter-lieth.png" alt="Climate Diagram of Gully KwaThuni (Umkomazi catchment) from CRU-TS" height="50%" width="50%">
 
 Calculation
 -----------
@@ -168,7 +168,7 @@ Backtransformation of the logarithmic runoffs to regular Q \[m³/s\]
 runoff_pred$Q <- 10^runoff_pred$Qlog
 ```
 
-### Calculation of area specific runoff
+### Calculation of area specific runoff and runoff height
 
 Until here, we were dealing with runoff values of the gauging station.
 Now we relate the results to the entire subcatchment area. Therefore, we
@@ -212,11 +212,13 @@ formats Q \[m³/s\], q \[l/(m²s)\] and R \[mm/d\]:
 
 Finally, we export the simulated data to a structured file with the two
 columns ‘year’ and runoff (‘q’ or ‘h’), which is ready to use with the
-gully model.
+gully model. Note that we convert q from unit \[l/(km²s)\] to
+\[l/(m²s)\] for compability reasons.
 
 ``` r
 # Export q in [l/(km²s)]
-out <- runoff_pred[,c("year", "q")] 
+out <- runoff_pred[,c("year", "q")]
+out$q <- out$q/1000000 # [l/(km²s)] to [l/(m²s)]
 out$q <- format(out$q, scientific = FALSE) # change to decimals
 write.table(out, "../output/S_150_lts_q.txt", sep="\t", row.names=F, col.names=F, quote=F)
 
