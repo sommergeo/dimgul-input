@@ -18,6 +18,7 @@ The simulated time-series reflects the conditions of the observed data, *without
 | logarithmic Discharge                | Qlog | log(m³/s)            |
 | area specific runoff "Abflussspende" | q    | l/(m²s)              |
 | daily runoff height "Abflusshöhe"    | R    | mm/day               |
+| subcatchment area                    | A    | km²                  |
 
 ### Study Area
 Gully KwaThunzi is situated in the Upper Umkomazi catchment and part of the subcatchment draining into gauging station [U1H005](http://www.dwa.gov.za/hydrology/Verified/HyImage.aspx?Station=U1H005).
@@ -129,6 +130,14 @@ for(i in unique(runoff$doy)){
 
 ```
 
+```{r Shapiro-Wilk test 2, eval=FALSE, warning=FALSE, include=FALSE}
+swtest <- as.data.frame(matrix(unlist(
+  with(runoff, tapply(Qlog, doy, shapiro.test))
+  ), ncol=4,byrow=T))
+
+
+```
+
 Therefore, we can aptly describe daily runoff patterns through the calculation of mean and standard deviation for each individual day-of-year.
 ```{r aggregate runoff, warning=FALSE}
 #Create empty data frame
@@ -193,7 +202,7 @@ catchment_area <- 1744 # area in [km²]
 runoff_pred$q <- runoff_pred$Q*1000/catchment_area # Q [m³/s] to [l/s]
 ```
 
-We also calculate the accumulated **runoff h** for each day in [mm/d] after Baumgartner & Liebscher (1996: eq. 14.2, p. 475)
+We also calculate the accumulated **runoff R** for each day in [mm/d] after Baumgartner & Liebscher (1996: eq. 14.2, p. 475)
 \begin{equation}R = \frac{q⋅t}{10^6}\end{equation}
 with t = time in [s]
 ```{r accumulated daily runoff, message=FALSE, warning=FALSE}
@@ -211,7 +220,7 @@ head(runoff_pred, 6)
 ```
 
 ### File Export
-Finally, we export the simulated data to a structured file with the two columns 'year' and runoff ('q' or 'h'), which is ready to use with the gully model. Note that we convert q from unit [l/(km²s)] to [l/(m²s)] for compability reasons.
+Finally, we export the simulated data to a structured file with the two columns 'year' and runoff ('q' or 'R'), which is ready to use with the gully model. Note that we convert q from unit [l/(km²s)] to [l/(m²s)] for compability reasons.
 ```{r export}
 # Export q in [l/(km²s)]
 out <- runoff_pred[,c("year", "q")]
