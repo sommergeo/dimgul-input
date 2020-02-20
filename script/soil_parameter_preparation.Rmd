@@ -1,0 +1,238 @@
+---
+title: "Soil parameters"
+author: "Christian Sommer"
+output:
+  md_document:
+    variant: markdown_github
+  html_document:
+    df_print: paged
+    number_sections: true
+    toc: true
+    toc_float: false
+---
+
+# Soil data
+We start by importing the results of a soil texture analysis from a table. The table contains a row for each layer with the following columns:
+
+- Name
+- lab number
+- thickness in [cm]
+- texture in [%]
+- organic matter in [%]
+- comment
+
+```{r}
+d <- read.csv("../data/soil_profile.csv", sep=";")
+```
+
+
+```{r echo=FALSE}
+head(d)
+```
+Here are the results plotted in a USDA soil texture triangle
+```{r texture triangle, echo=FALSE, fig.height=7, message=FALSE, warning=FALSE}
+library(soiltexture)
+# Calculate Silt and Sand Fractions, all columns must be capitals
+x <- d
+x$SILT <- d$csilt + d$fsilt
+x$SAND <- d$csand + d$msand + d$fsand + d$vfsand
+x$CLAY <- d$clay
+x <- TT.normalise.sum(tri.data=x)
+
+
+geo <- TT.plot(tri.data=x,
+              class.sys = "USDA.TT",
+              #class.p.bg.col = TRUE,
+              text.sum = 100,
+              main="USDA",
+              col="#A51E37",
+              #arrows.show = F,
+              pch=15,
+)
+
+
+TT.text(tri.data = x,
+        geo=geo,
+        #labels = c("L1", "L2", "L3", "L4"),
+        labels = seq(1,nrow(d)),
+        cex=1,
+        font=2,
+        col="#A51E37",
+        #adj=1,
+        offset=0.5,
+        pos=2)
+rm(x)
+```
+
+
+# Rill erodibility
+Is calculated after Alberts et al. (1995) using the proportion of very fine sand $VFS$ [%] and the content of organic matter $OM$ [%] with the equation 
+\begin{equation}K_{r} = 0.00197 + 0.00030 VFS + 0.038633 \mathrm{e}^{-1.84OM}\end{equation}
+```{r rill erodibility function, message=FALSE, warning=FALSE}
+erodibility <- function(vfsand, om){
+  0.00197+0.00030*vfsand+0.038633*exp(-1.84*om)
+}
+d$Kr <- erodibility(d$vfsand, d$som)
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+print(d$Kr)
+```
+
+
+# Critical velocity
+## Mean particle size diameter
+We calculate the mean particle size diameter $Dg% in [m] using the equation by Renard et al. (1997) with the primary fraction of the grain size classes $f_{i}$ in [%] and the arithmetic mean of the borders of the grain size classes $m_{i}$ in [mm].
+\begin{equation} Dg = exp(0.01 \sum{} f_{i}\cdot ln \cdot m_{i})\end{equation}
+```{r mean_particle_size_diameter, message=FALSE, warning=FALSE}
+mean_particle_diameter <- function(clay=0, silt=0, sand=0, csilt=0, fsilt=0, csand=0, msand=0, fsand=0, vfsand=0, method="geometric", classification="USDA"){
+  if(classification=="USDA"){
+    gsize <- c(mean(c(0, 0.002)),    # Clay
+               mean(c(0.002, 0.05)), # Silt
+               mean(c(0.05, 2)),   # Sand
+               mean(c(0.05, 0.02)),  # Coarse silt
+               mean(c(0.02, 0.002)), # Fine silt
+               mean(c(2, 0.5)),      # Coarse sand
+               mean(c(0.5, 0.25)),   # Medium sand
+               mean(c(0.25, 0.1)),   # Fine sand
+               mean(c(0.1, 0.05)))   # Very fine sand    
+  }
+  if(method=="geometric"){
+    mean_diameter <- exp(0.01 * (
+        clay * log(gsize[1]) +
+        silt * log(gsize[2]) +
+        sand * log(gsize[3]) +
+        csilt * log(gsize[4]) +
+        fsilt * log(gsize[5]) +
+        csand * log(gsize[6]) +  
+        msand * log(gsize[7]) +  
+        fsand * log(gsize[8]) +  
+        vfsand * log(gsize[9])
+    ))
+  }
+  return(mean_diameter/1000) # from mm to m
+}
+
+d$Dg <- mean_particle_diameter(d$clay, d$csilt, d$fsilt, d$csand, d$msand, d$fsand, d$vfsand, method="geometric", classification="USDA")
+```
+Note, that the Mean particle diameter is converted from [mm] to [m] for further processing
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+print(d$Dg)
+```
+
+
+## Shear stress
+There are multiple ways to estimate Shear stress $\tau_{c}$ from soil texture. However, you'll notice the large differences between the results of the different equations. We'll continue the method from Alberts et al. (1995).
+
+### after Smerdon (1961)
+\begin{equation} \tau_{c} = 3.11 \cdot 10^{0.0182C}\end{equation}
+```{r shear stress smeardon, message=FALSE, warning=FALSE}
+shear_stress <- function(clay){
+  shear_stress <- 3.11*10^(0.0182*clay) # in Pa (Pascal)
+}
+
+d$tau <- shear_stress(d$clay)
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+print(d$tau)
+```
+
+### after Alberts et al. (1995)
+\begin{equation} \tau_{c} = 2.67 + 0.065C - 0.058VFS\end{equation}
+```{r shear stress Alberts, message=FALSE, warning=FALSE}
+shear_stress <- function(clay, vfsand){
+  shear_stress <- 2.67 + 0.065 * clay - 0.058 * vfsand
+}
+
+d$tau <- shear_stress(d$clay, d$vfsand)
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+print(d$tau)
+```
+
+
+## Critical velocity after Bogomolov & Mikhailov (1988)
+Finally, we've collected all parameters to calculate the critical velocity of erosion initiation $V_{crit}$ [m/s] using the equation from  Bogomolov & Mikhailov (1988):
+\begin{equation}V_{crit} = 1.25\sqrt{\frac{2m_{1}}{1.54pn_{1}}[(p_{s}-p)gd + 1.25C^{1}_{f}K_{0}]}\end{equation}
+The equation includes some predefined parameter values, obtained from Märker (2001) and Sidrochuk (2019, pers. comm.), comprising the colloidal suspended load factor $m_{1}$, the turbulence parameter $n_{1}$, the density of water $p$, the gravity constant $g$ and the soil mechanical coefficent $K_{0}$.
+```{r, critical velocity, message=FALSE, warning=FALSE}
+v_crit <- function(m1=1,     # 1=clear water,...,1.4=colloidal suspended load > 0.1 kg/m3
+                   n1=4,     # Turbulence: 4
+                   ps,       # Density of soil kg/m3
+                   p=1000,   # Density of water: ~1000 kg/m3
+                   g=9.81,   # Newton/kg
+                   d,        # mean particle size diameter (m)
+                   K0=1,     # Soil mechanical coefficent: 0.5 (Maerker 2002) or 1 (Sidorchuk 2019)
+                   Cnf       # Soil shear strength (Pa)
+){
+  # Critical velocity of bed erosion initiation (after 1pers. comm. Sidorchuck 2019)
+  v_crit <- 1.25 * sqrt(
+    (2*m1/1.54*p*n1)*
+      ((ps-p)*g*d + 1.25*Cnf*K0)
+  )
+  return(v_crit)
+}
+
+d$v_crit <- v_crit(ps=2500, d=d$Dg, Cnf=d$tau)
+```
+
+
+
+# Critical slope
+The critical slope is simply the slope measured in the field or obtained from a high-res DEM coverted to radians.
+```{r critical slope, message=FALSE, warning=FALSE}
+s_crit <- function(slope, unit="degrees"){
+  if(unit=="degrees"){
+    s_crit <- slope*pi/180
+  }else if(unit=="percent"){
+    s_crit <- atan(slope/100)
+  }
+}
+# Since all layers have the same slope in this example, we can assign the same value. Otherwise get the value from the table.
+d$s_crit <- s_crit(57, "degrees")
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+print(d$s_crit)
+```
+
+
+
+# Export
+Now we can export all relevant variables of each layer to an individual PARAM.txt parameter file. 
+```{r export, message=FALSE, warning=FALSE}
+layer_export <- function(years, lnumber=1, v_crit, s_crit, Kr, Qdat="S_150.txt"){
+  for (i in seq(1,lnumber)){
+    filename <- paste("../output/PARAM", toString(i), ".txt", sep="")
+    Layer <- file(filename, open="w")
+    lines <- c("0\t0", 
+               i,              # Number of layer
+               v_crit[i],      # Critical Velocity
+               "0",            # Index of texture layer (unused)
+               s_crit[i],      # Stable slope
+               Kr[i],          # Erodibility coefficent
+               "S_150.txt",
+               years,
+               seq(1, years, 1))
+    writeLines(lines, con=Layer)
+    close(Layer)
+    rm(i, filename, Layer, lines)
+}}
+
+
+# Apply
+layer_export(years=59, lnumber=nrow(d), v_crit=d$v_crit, s_crit=d$s_crit, Kr=d$Kr)
+```
+
+
+
+
+# References
+Alberts E. E., Nearing M. A., Weltz M. A., Risse L. M., Pierson F. B., Zhang X. C., Laflen J. M., and Simanton J. R.
+1995, Soil component. USDA-Water Erosion Prediction Project: Hillslope Profile and Watershed Model
+Documentation. Chapter 7, pp. 7.1–7.45. Rep. No. 10. USDA-ARS National Soil Erosion Research Laboratory,
+West Lafayette, IN. [Open](./resources/Alberts_1995.pdf)
+
+Bogomolov, A. I. and K. A. Mikhaylov (1972). Hydravlica. Moscow, Stroyizdat.
+
+Maerker, M. (2001). Regionale Erosionsmodellierung unter Verwendung des Konzepts der Erosion Response Units (ERU) am Beispiel zweier Flusseinzugsgebiete im südlichen Afrika. Chemisch-Geowissenschaftlichen Fakultät. Jena, Friedrich-Schiller-Universität Jena. Dr. rer. nat.: 212.
+
+Smerdon, E. T., & Beasley, R. P. (1961). Critical tractive forces in cohesive soils. Agricultural Engineering, 42(1), 26-29.
