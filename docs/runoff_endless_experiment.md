@@ -1,8 +1,8 @@
 Content
--------
+=======
 
 This is a an R script to simulate a runoff time-series based on
-empirical data for the DYNGUL gully model by Alexey Sidorchuk (1998,
+empirical data for the DIMGUL gully model by Alexey Sidorchuk (1998,
 1999). In a first step, observed flow data are transformed and a
 temporaly variable gaussian function is derived. In a second step,
 random values are derived from this function in a reproducible manner,
@@ -13,9 +13,10 @@ observed data, *without effects like climate change or land use / land
 cover change, etc*. In the third step, we calculate hydrological values
 like area specific runoff q and runoff height R. In the last step, data
 are exportet in a structered text file, which is ready-to-use with the
-DYNGUL implementation.
+DIMGUL implementation.
 
-### Units
+Units
+-----
 
 | Name                                 | Abbr | Unit      |
 |--------------------------------------|------|-----------|
@@ -23,24 +24,13 @@ DYNGUL implementation.
 | logarithmic Discharge                | Qlog | log(m³/s) |
 | area specific runoff “Abflussspende” | q    | l/(m²s)   |
 | daily runoff height “Abflusshöhe”    | R    | mm/day    |
-
-### Study Area
-
-Gully KwaThunzi is situated in the Upper Umkomazi catchment and part of
-the subcatchment draining into gauging station
-[U1H005](http://www.dwa.gov.za/hydrology/Verified/HyImage.aspx?Station=U1H005).
-
-<img src="../docs/img/umkomazi_catchment.png" alt="Umkomazi catchment with Gully KwaThunzi" height="50%" width="50%">
-
-The climate data were aggregated from the
-[CRU-TS](http://www.cru.uea.ac.uk/data) v4.03 dataset.
-
-<img src="../docs/img/kt_walter-lieth.png" alt="Climate Diagram of Gully KwaThuni (Umkomazi catchment) from CRU-TS" height="50%" width="50%">
+| subcatchment area                    | A    | km²       |
 
 Calculation
------------
+===========
 
-### Data import and preparation
+Data import and preparation
+---------------------------
 
 Import the runoff dataset 1960-2018 of the Umkomazi gauging station (ID:
 U1H005) available at the [South African Department of Water
@@ -87,7 +77,8 @@ As a result, we get this table…
 … and this continuous dataset of the runoff at the gauging station.
 ![](runoff_endless_experiment_files/figure-markdown_github/plot%20time%20series-1.png)
 
-### Runoff transformation and aggregation
+Runoff transformation and aggregation
+-------------------------------------
 
 We transform the discharge by a base 10 logarithm.
 
@@ -128,7 +119,8 @@ runoff_aggregates$sd <- aggregate(runoff, list(runoff$doy), FUN=sd)[,c('Qlog')]
 names(runoff_aggregates) <- c('doy','mean','sd')
 ```
 
-### Runoff simulation
+Runoff simulation
+-----------------
 
 Now, We simulate expected runoff for each day of any given timeseries,
 in this example for the range 1500–2018. We create randomized values,
@@ -168,7 +160,8 @@ Backtransformation of the logarithmic runoffs to regular Q \[m³/s\]
 runoff_pred$Q <- 10^runoff_pred$Qlog
 ```
 
-### Calculation of area specific runoff and runoff height
+Calculation of area specific runoff and runoff height
+-----------------------------------------------------
 
 Until here, we were dealing with runoff values of the gauging station.
 Now we relate the results to the entire subcatchment area. Therefore, we
@@ -183,7 +176,7 @@ catchment_area <- 1744 # area in [km²]
 runoff_pred$q <- runoff_pred$Q*1000/catchment_area # Q [m³/s] to [l/s]
 ```
 
-We also calculate the accumulated **runoff h** for each day in \[mm/d\]
+We also calculate the accumulated **runoff R** for each day in \[mm/d\]
 after Baumgartner & Liebscher (1996: eq. 14.2, p. 475) with t = time in
 \[s\]
 
@@ -208,10 +201,11 @@ formats Q \[m³/s\], q \[l/(m²s)\] and R \[mm/d\]:
     ## 2077 1500   5 1.247821 17.69381 10.14553 0.8765739
     ## 2596 1500   6 1.669091 46.67577 26.76363 2.3123776
 
-### File Export
+File Export
+===========
 
 Finally, we export the simulated data to a structured file with the two
-columns ‘year’ and runoff (‘q’ or ‘h’), which is ready to use with the
+columns ‘year’ and runoff (‘q’ or ‘R’), which is ready to use with the
 gully model. Note that we convert q from unit \[l/(km²s)\] to
 \[l/(m²s)\] for compability reasons.
 
@@ -229,12 +223,12 @@ write.table(out, "../output/S_150_lts_R.txt", sep="\t", row.names=F, col.names=F
 ```
 
 Useful Links
-------------
+============
 
 -   <https://www.bauformeln.de/einheiten-rechner/niederschlagsintensitaet-und-abflussspende/>
 
 References
-----------
+==========
 
 BAUMGARTNER, A. & LIEBSCHER, H. J. 1996. Lehrbuch der Hydrologie, Band
 1: Allgemeine Hydologie, Quantitative Hydrologie, Stuttgart, Germany,

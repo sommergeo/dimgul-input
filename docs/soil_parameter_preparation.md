@@ -34,14 +34,20 @@ Rill erodibility
 ================
 
 Is calculated after Alberts et al. (1995) using the proportion of very
-fine sand *V**F**S* \[%\] and the content of organic matter *O**M* \[%\]
-with the equation
+fine sand *V**F**S* \[%\], clay *C**L* \[%\] and the content of organic
+matter *O**M* \[%\]. If the soil contains more than 30% sand, we apply
+this equation: If the sand content is lower than 30%, the authors
+suggest using:
 
 ``` r
-erodibility <- function(vfsand, om){
-  0.00197+0.00030*vfsand+0.038633*exp(-1.84*om)
+erodibility <- function(clay=0, vfsand=0, om=0, sand=31){
+  if(sand >= 30){
+    erodibility <- 0.00197+0.00030*vfsand+0.038633*exp(-1.84*om)
+  }else if(sand < 30){
+    erodibility <- 0.0069*0.134*exp(-20*clay)
+  }
 }
-d$Kr <- erodibility(d$vfsand, d$som)
+d$Kr <- erodibility(vfsand=d$vfsand, om=d$som, clay=d$clay, sand=sum(d$csand, d$msand, d$fsand, d$vfsand))
 ```
 
     ## [1] 0.006084481 0.002198998 0.008529263 0.011005624
@@ -136,7 +142,15 @@ some predefined parameter values, obtained from Märker (2001) and
 Sidrochuk (2019, pers. comm.), comprising the colloidal suspended load
 factor *m*<sub>1</sub>, the turbulence parameter *n*<sub>1</sub>, the
 density of water *p*, the gravity constant *g* and the soil mechanical
-coefficent *K*<sub>0</sub>.
+coefficent *K*<sub>0</sub>. The colloidal suspended load factor can be
+obtained from Mirtshkulava (1988):
+
+| colloidal factor                              | m    | colloidal factor           | m    |
+|-----------------------------------------------|------|----------------------------|------|
+| colloidal particle concentration \> 0.1 kg/m³ | 1.4  | humid climates             | 0.71 |
+| coarse bedload                                | 0.8  | light meandering channels  | 0.95 |
+| water plants                                  | 1.15 | medium meandering channels | 0.85 |
+| arid climates                                 | 0.22 | strong meandering channels | 0.65 |
 
 ``` r
 v_crit <- function(m1=1,     # 1=clear water,...,1.4=colloidal suspended load > 0.1 kg/m3
@@ -158,6 +172,8 @@ v_crit <- function(m1=1,     # 1=clear water,...,1.4=colloidal suspended load > 
 
 d$v_crit <- v_crit(ps=2500, d=d$Dg, Cnf=d$tau)
 ```
+
+    ## [1] 215.7080 219.5688 247.5199 213.7860
 
 We can compare our results with the following results from Bogomolov &
 Mikhaylov (1972, after Sidorchuk 1999).
@@ -194,7 +210,7 @@ Export
 ======
 
 Now we can export all relevant variables of each layer to an individual
-PARAM.txt parameter file.
+PARAM.txt parameter file, ready for DYMGUL.
 
 ``` r
 layer_export <- function(years, lnumber=1, v_crit, s_crit, Kr, Qdat="S_150.txt"){
@@ -229,6 +245,7 @@ USDA-Water Erosion Prediction Project: Hillslope Profile and Watershed
 Model Documentation. Chapter 7, pp. 7.1–7.45. Rep. No. 10. USDA-ARS
 National Soil Erosion Research Laboratory, West Lafayette, IN.
 [Open](./resources/Alberts_1995.pdf)
+[Link](https://www.ars.usda.gov/midwest-area/west-lafayette-in/national-soil-erosion-research/docs/wepp/wepp-model-documentation/)
 
 Bogomolov, A. I. and K. A. Mikhaylov (1972). Hydravlica. Moscow,
 Stroyizdat.
