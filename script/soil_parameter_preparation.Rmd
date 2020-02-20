@@ -175,6 +175,15 @@ v_crit <- function(m1=1,     # 1=clear water,...,1.4=colloidal suspended load > 
 d$v_crit <- v_crit(ps=2500, d=d$Dg, Cnf=d$tau)
 ```
 
+We can compare our results with the following results from Bogomolov & Mikhaylov (1972, after Sidorchuk 1999).
+
+| Soil texture      | Vcr  | Soil texture      | Vcr  | Soil texture      | Vcr  | Soil texture      | Vcr  |
+|-------------------|------|-------------------|------|-------------------|------|-------------------|------|
+| Large   boulders  | 4    | Very coarse sand  | 0.65 | Loamy sand        | 0.6  | Hard loam         | 1.15 |
+| Small boulders    | 3.2  | Coarse sand       | 0.6  | Soft sandy loam   | 0.7  | Soft clay         | 0.8  |
+| Coarse gravel     | 1.1  | Medium sand       | 0.57 | Hard sandy loam   | 1    | Medium hard clay  | 1.2  |
+| Medium gravel     | 0.9  | Fine sand         | 0.32 | Soft loam         | 0.75 | Hard clay         | 1.4  |
+| Fine gravel       | 0.75 | Silt              | 0.55 | Medium hard loam  | 1    | Very hard clay    | 1.7  |
 
 
 # Critical slope
@@ -236,3 +245,5 @@ Bogomolov, A. I. and K. A. Mikhaylov (1972). Hydravlica. Moscow, Stroyizdat.
 Maerker, M. (2001). Regionale Erosionsmodellierung unter Verwendung des Konzepts der Erosion Response Units (ERU) am Beispiel zweier Flusseinzugsgebiete im südlichen Afrika. Chemisch-Geowissenschaftlichen Fakultät. Jena, Friedrich-Schiller-Universität Jena. Dr. rer. nat.: 212.
 
 Smerdon, E. T., & Beasley, R. P. (1961). Critical tractive forces in cohesive soils. Agricultural Engineering, 42(1), 26-29.
+
+Sidorchuk, A. (1999). "Dynamic and static models of gully erosion." CATENA 37(3): 401-414.

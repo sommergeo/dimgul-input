@@ -1766,6 +1766,73 @@ d$tau &lt;- shear_stress(d$clay, d$vfsand)</code></pre>
 }
 
 d$v_crit &lt;- v_crit(ps=2500, d=d$Dg, Cnf=d$tau)</code></pre>
+<p>We can compare our results with the following results from Bogomolov &amp; Mikhaylov (1972, after Sidorchuk 1999).</p>
+<table>
+<thead>
+<tr class="header">
+<th>Soil texture</th>
+<th>Vcr</th>
+<th>Soil texture</th>
+<th>Vcr</th>
+<th>Soil texture</th>
+<th>Vcr</th>
+<th>Soil texture</th>
+<th>Vcr</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Large boulders</td>
+<td>4</td>
+<td>Very coarse sand</td>
+<td>0.65</td>
+<td>Loamy sand</td>
+<td>0.6</td>
+<td>Hard loam</td>
+<td>1.15</td>
+</tr>
+<tr class="even">
+<td>Small boulders</td>
+<td>3.2</td>
+<td>Coarse sand</td>
+<td>0.6</td>
+<td>Soft sandy loam</td>
+<td>0.7</td>
+<td>Soft clay</td>
+<td>0.8</td>
+</tr>
+<tr class="odd">
+<td>Coarse gravel</td>
+<td>1.1</td>
+<td>Medium sand</td>
+<td>0.57</td>
+<td>Hard sandy loam</td>
+<td>1</td>
+<td>Medium hard clay</td>
+<td>1.2</td>
+</tr>
+<tr class="even">
+<td>Medium gravel</td>
+<td>0.9</td>
+<td>Fine sand</td>
+<td>0.32</td>
+<td>Soft loam</td>
+<td>0.75</td>
+<td>Hard clay</td>
+<td>1.4</td>
+</tr>
+<tr class="odd">
+<td>Fine gravel</td>
+<td>0.75</td>
+<td>Silt</td>
+<td>0.55</td>
+<td>Medium hard loam</td>
+<td>1</td>
+<td>Very hard clay</td>
+<td>1.7</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div id="critical-slope" class="section level1">
@@ -1813,6 +1880,7 @@ layer_export(years=59, lnumber=nrow(d), v_crit=d$v_crit, s_crit=d$s_crit, Kr=d$K
 <p>Bogomolov, A. I. and K. A. Mikhaylov (1972). Hydravlica. Moscow, Stroyizdat.</p>
 <p>Maerker, M. (2001). Regionale Erosionsmodellierung unter Verwendung des Konzepts der Erosion Response Units (ERU) am Beispiel zweier Flusseinzugsgebiete im südlichen Afrika. Chemisch-Geowissenschaftlichen Fakultät. Jena, Friedrich-Schiller-Universität Jena. Dr. rer. nat.: 212.</p>
 <p>Smerdon, E. T., &amp; Beasley, R. P. (1961). Critical tractive forces in cohesive soils. Agricultural Engineering, 42(1), 26-29.</p>
+<p>Sidorchuk, A. (1999). “Dynamic and static models of gully erosion.” CATENA 37(3): 401-414.</p>
 </div>
 
 
