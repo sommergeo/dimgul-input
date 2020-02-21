@@ -1,12 +1,12 @@
-# dyngul-input
- Process input variables for the DIMGUL gully erosion model by A. Sidorchuk.
+# dimgul-input
+Pre-process input variables for the DIMGUL gully erosion model by A. Sidorchuk.
 
 ## Scripts
 
 - [Soil parameter](https://www.sommergeo.com/dimgul-input/docs/soil_parameter_preparation.html): Calculate the soil parameters for multiple layers from soil texture and field measurements.
 - [Runoff simulation](https://www.sommergeo.com/dimgul-input/docs/runoff_endless_experiment.html): Simulate a long-term surface runoff dataset based on empirical data.
 
-## Exemplacric study area of the scripts
+## Example data
 Gully KwaThunzi is situated in the Upper Umkomazi catchment and part of the subcatchment draining into gauging station [U1H005](http://www.dwa.gov.za/hydrology/Verified/HyImage.aspx?Station=U1H005).
 
 <img src="./docs/img/umkomazi_catchment.png" alt="Umkomazi catchment with Gully KwaThunzi" height="50%" width="50%">
