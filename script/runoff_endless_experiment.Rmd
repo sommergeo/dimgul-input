@@ -2,13 +2,13 @@
 title: "KwaThunzi runoff time-series simulation"
 author: "Christian Sommer"
 output:
+  md_document:
+    variant: markdown_github
   html_document:
     df_print: paged
     number_sections: true
     toc: true
     toc_float: false
-  md_document:
-    variant: markdown_github
 ---
 # Content
 This is a an R script to simulate a runoff time-series based on empirical data for the DIMGUL gully model by Alexey Sidorchuk (1998, 1999). In a first step, observed flow data are transformed and a temporaly variable gaussian function is derived. In a second step, random values are derived from this function in a reproducible manner, in order to simulate a long-term time-series, which resembles the natural conditions, whille providing data, where no observations are available.
@@ -50,6 +50,7 @@ runoff[is.na(runoff$QUAL),2] <- NA # remove Quality measures that shifted in the
 runoff <- ts.format(runoff, format="%Y%m%d", cols=c(1,2)) # set date format
 runoff$year <- as.integer(substr(runoff$Date, 1,4)) # derive year
 runoff$doy <- as.numeric(strftime(runoff$Date, format = "%j"))  # derive day-of-year
+runoff$month <- as.numeric(strftime(runoff$Date, format = "%m"))  # derive day-of-year
 runoff <- na.omit(runoff) # delete empty fields
 ```
 
@@ -93,7 +94,7 @@ ggplot(runoff, aes(x=doy,y=Qlog)) +
 
 If we plot all of a day-of-year's discharges, which were measured over the time series, we notice that they follow a normal distribution, when plotted on a logarithmic scale.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 #ggplot(runoff, aes(Q))+
 ggplot(subset(runoff, doy %in% c(1, 183)), aes(Q, group=doy, colour=factor(doy), fill=factor(doy)))+
   geom_density(aes(Q, group=doy, colour=factor(doy), fill=factor(doy)),adjust=3, alpha=0.5) +
@@ -109,6 +110,22 @@ ggplot(subset(runoff, doy %in% c(1, 183)), aes(Q, group=doy, colour=factor(doy),
   labs(title="Runoff density for selected days", x="Q [m³/s]", caption="n=59 years") +
   theme_bw()
 ```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggridges)
+library(viridis)
+
+ggplot(runoff, aes(x=Q, y=as.factor(month), fill=as.factor(month)))+
+  geom_density_ridges_gradient(rel_min_height = 0.05)+
+  scale_x_log10(limits=c(0.1,1000))+
+  scale_fill_discrete(name="Month",
+                         breaks=seq(1,12),
+                      guide=F) +
+  #scale_x_continuous(trans='log10')+
+  labs(title="Monthly runoff density", x="Q [m³/s]", y="month", caption="n=59 years") +
+  theme_bw()
+```
+
+
 
 ```{r Shapiro-Wilk test, eval=FALSE, warning=FALSE, include=FALSE}
 #Furthermore, we conduct a Shapiro-Wilk test toconfirm our observation statistically. We excpect (H0), that the logarithmic discharge is normally distributed.

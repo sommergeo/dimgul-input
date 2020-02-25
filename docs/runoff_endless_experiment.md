@@ -62,17 +62,18 @@ runoff[is.na(runoff$QUAL),2] <- NA # remove Quality measures that shifted in the
 runoff <- ts.format(runoff, format="%Y%m%d", cols=c(1,2)) # set date format
 runoff$year <- as.integer(substr(runoff$Date, 1,4)) # derive year
 runoff$doy <- as.numeric(strftime(runoff$Date, format = "%j"))  # derive day-of-year
+runoff$month <- as.numeric(strftime(runoff$Date, format = "%m"))  # derive day-of-year
 runoff <- na.omit(runoff) # delete empty fields
 ```
 
 As a result, we get this table…
 
-    ## # A tibble: 3 x 5
-    ##   Date                    Q  QUAL  year   doy
-    ##   <dttm>              <dbl> <dbl> <int> <dbl>
-    ## 1 1960-09-01 00:00:00  2.61     1  1960   245
-    ## 2 1960-09-02 00:00:00  2.58     1  1960   246
-    ## 3 1960-09-03 00:00:00  2.56     1  1960   247
+    ## # A tibble: 3 x 6
+    ##   Date                    Q  QUAL  year   doy month
+    ##   <dttm>              <dbl> <dbl> <int> <dbl> <dbl>
+    ## 1 1960-09-01 00:00:00  2.61     1  1960   245     9
+    ## 2 1960-09-02 00:00:00  2.58     1  1960   246     9
+    ## 3 1960-09-03 00:00:00  2.56     1  1960   247     9
 
 … and this continuous dataset of the runoff at the gauging station.
 ![](runoff_endless_experiment_files/figure-markdown_github/plot%20time%20series-1.png)
@@ -87,12 +88,12 @@ runoff$Qlog <- log10(runoff$Q)  # calculate Log base 10 of runoff
 runoff <- runoff[!(runoff$Qlog=='-Inf'),] # delete -Inf
 ```
 
-    ## # A tibble: 3 x 6
-    ##   Date                    Q  QUAL  year   doy  Qlog
-    ##   <dttm>              <dbl> <dbl> <int> <dbl> <dbl>
-    ## 1 1960-09-01 00:00:00  2.61     1  1960   245 0.416
-    ## 2 1960-09-02 00:00:00  2.58     1  1960   246 0.412
-    ## 3 1960-09-03 00:00:00  2.56     1  1960   247 0.408
+    ## # A tibble: 3 x 7
+    ##   Date                    Q  QUAL  year   doy month  Qlog
+    ##   <dttm>              <dbl> <dbl> <int> <dbl> <dbl> <dbl>
+    ## 1 1960-09-01 00:00:00  2.61     1  1960   245     9 0.416
+    ## 2 1960-09-02 00:00:00  2.58     1  1960   246     9 0.412
+    ## 3 1960-09-03 00:00:00  2.56     1  1960   247     9 0.408
 
 ![](runoff_endless_experiment_files/figure-markdown_github/log%20tranformation%20plot-1.png)
 
@@ -100,7 +101,7 @@ If we plot all of a day-of-year’s discharges, which were measured over
 the time series, we notice that they follow a normal distribution, when
 plotted on a logarithmic scale.
 
-![](runoff_endless_experiment_files/figure-markdown_github/unnamed-chunk-4-1.png)
+![](runoff_endless_experiment_files/figure-markdown_github/unnamed-chunk-5-1.png)
 
 Therefore, we can aptly describe daily runoff patterns through the
 calculation of mean and standard deviation for each individual
