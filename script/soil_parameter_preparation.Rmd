@@ -71,11 +71,11 @@ Is calculated after Alberts et al. (1995) using the proportion of very fine sand
 If the sand content is lower than 30%, the authors suggest using:
 \begin{equation}K_{r} = 0.0069 + 0.134 \mathrm{e}^{-20CL}\end{equation}
 ```{r rill erodibility function, message=FALSE, warning=FALSE}
-erodibility <- function(clay=0, vfsand=0, om=0, sand=31){
+erodibility <- function(clay, vfsand, om, sand){
   if(sand >= 30){
     erodibility <- 0.00197+0.00030*vfsand+0.038633*exp(-1.84*om)
   }else if(sand < 30){
-    erodibility <- 0.0069*0.134*exp(-20*clay)
+    erodibility <- 0.0069+0.134*exp(-20*clay)
   }
 }
 d$Kr <- erodibility(vfsand=d$vfsand, om=d$som, clay=d$clay, sand=sum(d$csand, d$msand, d$fsand, d$vfsand))
@@ -187,7 +187,7 @@ v_crit <- function(m1=1,     # 1=clear water,...,1.4=colloidal suspended load > 
   return(v_crit)
 }
 
-d$v_crit <- v_crit(ps=2500, d=d$Dg, Cnf=d$tau)
+d$v_crit <- v_crit(ps=1200, d=d$Dg, Cnf=d$tau)
 ```
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 print(d$v_crit)

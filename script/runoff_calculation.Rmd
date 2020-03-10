@@ -72,158 +72,6 @@ ggplot(runoff, aes(x=Date, y=Q)) +
         strip.text.x = element_text(size = 6))
 ```
 
-## Runoff transformation and aggregation
-
-We transform the discharge by a base 10 logarithm.
-```{r log tranformation}
-runoff$Qlog <- log10(runoff$Q)  # calculate Log base 10 of runoff
-runoff <- runoff[!(runoff$Qlog=='-Inf'),] # delete -Inf
-```
-```{r echo=FALSE}
-head(runoff,3)
-```
-```{r log tranformation plot, echo=FALSE}
-# Density of logarithmic runoff (per doy)  
-plt_runoffobs <- ggplot(runoff, aes(x=doy,y=Qlog)) +
-  geom_bin2d(binwidth=c(10,0.1)) +
-  labs(x="Day of year", y="Log Q [m³/s]", title="Observed discharge Umkomazi (U1H005)") +
-  ylim(-2,3) +
-  theme_bw()
-
-plot(plt_runoffobs)
-  
-```
-```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-png(filename = "runoff_obs.png", units="cm", width=14, height=7, res=300)
-plot(plt_runoffobs)
-dev.off()
-```
-
-
-If we plot all of a day-of-year's discharges, which were measured over the time series, we notice that they follow a normal distribution, when plotted on a logarithmic scale.
-
-```{r message=FALSE, warning=FALSE, include=FALSE}
-#ggplot(runoff, aes(Q))+
-plt_doys <- ggplot(subset(runoff, doy %in% c(1, 183)), aes(Q, group=doy, colour=factor(doy), fill=factor(doy)))+
-  geom_density(aes(Q, group=doy, colour=factor(doy), fill=factor(doy)),adjust=3, alpha=0.5) +
-  geom_rug()+
-  scale_x_log10(limits=c(1,1000))+
-  #scale_x_continuous(trans='log10')+
-  scale_fill_discrete(name="Day of year",
-                         breaks=c(1,183),
-                         labels=c("Jan 1st", "Jul 1st")) +
-  scale_colour_discrete(name="Day of year",
-                         breaks=c(1,183),
-                         labels=c("Jan 1st", "Jul 1st")) +
-  labs(title="Discharge density for selected days", x="Q [m³/s]", caption="n=59 obs.") +
-  theme_bw()
-plot(plt_doys)
-
-png(filename = "runoff_doys.png", units="cm", width=12, height=7, res=300)
-plot(plt_doys)
-dev.off()
-
-```
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-library(ggridges)
-library(viridis)
-
-ggplot(runoff, aes(x=Q, y=as.factor(month), fill=as.factor(month)))+
-  geom_density_ridges_gradient(rel_min_height = 0.05)+
-  scale_x_log10(limits=c(0.1,1000))+
-  scale_fill_discrete(name="Month",
-                         breaks=seq(1,12),
-                      guide=F) +
-  #scale_x_continuous(trans='log10')+
-  labs(title="Monthly runoff density", x="Q [m³/s]", y="month", caption="n=59 years") +
-  theme_bw()
-```
-
-
-
-```{r Shapiro-Wilk test, eval=FALSE, warning=FALSE, include=FALSE}
-#Furthermore, we conduct a Shapiro-Wilk test toconfirm our observation statistically. We excpect (H0), that the logarithmic discharge is normally distributed.
-
-
-for(i in unique(runoff$doy)){
-  
-  if(shapiro.test(runoff$Qlog[runoff$doy==i])$p.value <= 0.01){
-    print(shapiro.test(runoff$Qlog[runoff$doy==i])$p.value)
-  }
-}
-
-```
-
-```{r Shapiro-Wilk test 2, eval=FALSE, warning=FALSE, include=FALSE}
-runoff2 <- runoff
-
-swtest <- as.data.frame(matrix(unlist(
-  with(runoff2, tapply(Qlog, doy, shapiro.test))
-  ), ncol=4,byrow=T))
-
-```
-
-Therefore, we can aptly describe daily runoff patterns through the calculation of mean and standard deviation for each individual day-of-year.
-```{r aggregate runoff, warning=FALSE}
-#Create empty data frame
-runoff_aggregates <- data.frame()
-
-#aggregate mean runoff per day
-runoff_aggregates <- aggregate(runoff, by=list(runoff$doy), FUN=mean)[,c('doy','Qlog')]
-
-#aggregate mean runoff per day
-runoff_aggregates$sd <- aggregate(runoff, list(runoff$doy), FUN=sd)[,c('Qlog')]
-
-names(runoff_aggregates) <- c('doy','mean','sd')
-
-```
-
-
-## Runoff simulation
-Now, We simulate expected runoff for each day of any given timeseries, in this example for the range 1500–2018. We create randomized values, based on the observed annual discharge distribution, which was derived from the time series 1960-2018. The random values are derived through a gaussian function from the observed mean and standard deviation.
-```{r simulation, message=FALSE, warning=FALSE}
-set.seed(2020)
-# Manual input of desired time span
-start_year <- 1500
-end_year <- 2018
-number_of_years <- end_year-start_year
-runoff_pred <- data.frame()
-
-# Simulation
-for(i in runoff_aggregates$doy){
-  x <- rnorm(number_of_years, mean=runoff_aggregates$mean[i], sd=runoff_aggregates$sd[i])
-  pred <- data.frame(cbind(seq(start_year,end_year,1), # year
-                         rep(i, number_of_years),      # doy
-                         x))                           # predicted values
-  runoff_pred <- rbind(runoff_pred, pred)
-}
-names(runoff_pred) <- c('year','doy','Qlog')
-
-# Filter gap years
-runoff_pred <- runoff_pred[!(runoff_pred$doy==366 & leap_year(runoff_pred$year)==TRUE),]
-
-```
-
-Here is the resulting distribution of daily discharges. The similarity with the previous illustration of observed data is obvious.
-```{r simulation plot, echo=FALSE, message=FALSE, warning=FALSE}
-plt_runoffpred <- ggplot(runoff_pred, aes(x=doy,y=Qlog)) +
-  geom_bin2d(binwidth=c(10,0.1)) +
-  labs(x="Day of year", y="Log Q [m³/s]", title="Simulated discharge Umkomazi (U1H005)")+
-  ylim(-2,3)+
-  theme_bw()
-
-plot(plt_runoffpred)
-```
-```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-png(filename = "runoff_pred.png", units="cm", width=14, height=7, res=300)
-plot(plt_runoffpred)
-dev.off()
-```
-
-Backtransformation of the logarithmic runoffs to regular Q [m³/s]
-```{r backtransformation, warning=FALSE}
-runoff_pred$Q <- 10^runoff_pred$Qlog
-```
 
 ## Calculation of area specific runoff and runoff height
 Until here, we were dealing with runoff values of the gauging station. Now we relate the results to the entire subcatchment area. Therefore, we calculate the **area specific runoff (q)** after Baumgartner & Liebscher (1996: eq. 14.1, p. 475) and Casper & Bormann (2016: eq. 8.4, p. 128) using
@@ -231,39 +79,39 @@ Until here, we were dealing with runoff values of the gauging station. Now we re
 with Q = runoff at the gauging station [m³/s] and A = subcatchment area of the gauging station [km²]. The area specific runoff q is in [l/(km²s)].
 ```{r area specific runoff}
 catchment_area <- 1744 # area in [km²]
-runoff_pred$q <- runoff_pred$Q*1000/catchment_area # Q [m³/s] to [l/km²/s]
+runoff$q <- runoff$Q*1000/catchment_area # Q [m³/s] to [l/(km²/s)]
 ```
 
 We also calculate the accumulated **runoff R** for each day in [mm/d] after Baumgartner & Liebscher (1996: eq. 14.2, p. 475)
 \begin{equation}R = \frac{q⋅t}{10^6}\end{equation}
 with t = time in [s]
 ```{r accumulated daily runoff, message=FALSE, warning=FALSE}
-runoff_pred$R <- runoff_pred$q * 86400 / 10^6 # per day
+runoff$R <- runoff$q * 86400 / 10^6 # per day
 ```
 
 Order rows by year and day-of-year
 ```{r order}
-runoff_pred <- runoff_pred[order(runoff_pred$year, runoff_pred$doy),]
+runoff <- runoff[order(runoff$year, runoff$doy),]
 ```
 
-This is the resulting table with simulated runoff in the differen formats Q [m³/s], q [l/(m²s)] and R [mm/d]:
+This is the resulting table with simulated runoff in the differen formats Q [m³/s], q [l/(km²s)] and R [mm/d]:
 ```{r echo=FALSE}
-head(runoff_pred, 6)
+head(runoff)
 ```
 
 # File Export
 Finally, we export the simulated data to a structured file with the two columns 'year' and runoff ('q' or 'R'), which is ready to use with the gully model. Note that we convert q from unit [l/(km²s)] to [l/(m²s)] for compability reasons.
 ```{r export}
 # Export q in [l/(km²s)]
-out <- runoff_pred[,c("year", "q")]
+out <- runoff[,c("year", "q")]
 out$q <- out$q/1000000 # [l/(km²s)] to [l/(m²s)]
 out$q <- format(out$q, scientific = FALSE) # change to decimals
-write.table(out, "../output/S_150_lts_q.txt", sep="\t", row.names=F, col.names=F, quote=F)
+write.table(out, "../output/S_150_obs_Lsqm.txt", sep="\t", row.names=F, col.names=F, quote=F)
 
 # Export h in [mm/d]
-out <- runoff_pred[,c("year", "R")] 
+out <- runoff[,c("year", "R")] 
 out$R <- format(out$R, scientific = FALSE) # change to decimals
-write.table(out, "../output/S_150_lts_R.txt", sep="\t", row.names=F, col.names=F, quote=F)
+write.table(out, "../output/S_150_obs_lts_R_mmd.txt", sep="\t", row.names=F, col.names=F, quote=F)
 ```
 
 # Useful Links
